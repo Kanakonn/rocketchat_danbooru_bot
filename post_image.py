@@ -35,6 +35,17 @@ def download_danbooru_image(image):
     else:
         raise ValueError("Could not download {}: {} {}".format(image['file_url'], attachment_data.status_code, attachment_data.content))
 
+def get_image_rating(rating):
+    try:
+        return {
+            'e': "explicit",
+            'q': "questionable",
+            's': "safe",
+        }[rating]
+    except KeyError:
+        return rating
+
+
 if __name__ == "__main__":
     try:
         with open("config.json", 'r') as f:
@@ -48,7 +59,7 @@ if __name__ == "__main__":
 
     if not all(x in CONFIG.keys() for x in [
         "danbooru_username", "danbooru_api_key", "rocketchat_server", "rocketchat_user_id",
-        "rocketchat_auth_token", "rocketchat_rate_limit_ms", "rocketchat_channel", "download_dir",
+        "rocketchat_auth_token", "rocketchat_channel", "download_dir",
         "image_server_url", "tags"
     ]):
         print("Missing one or more required config keys!")
@@ -71,11 +82,8 @@ if __name__ == "__main__":
 
     image_url = CONFIG['image_server_url'].format(filename=image_filename)
 
-    RATE_LIMIT = CONFIG['rocketchat_rate_limit_ms'] / 1000
-
     with sessions.Session() as session:
         print("Connecting to rocket.chat instance...")
-        print("Rate limiter is set to {} seconds".format(RATE_LIMIT))
         rocketchat = RocketChat(user_id=CONFIG['rocketchat_user_id'], auth_token=CONFIG['rocketchat_auth_token'],
                                 server_url=CONFIG['rocketchat_server'], session=session)
 
@@ -101,9 +109,12 @@ if __name__ == "__main__":
         if source_url is None:
             source_url = DANBOORU_POST_URL.format(id=image['id'])
 
+        rating = " ".join(filter(lambda x: "rating:" in x, CONFIG['tags']))
+        if not rating:
+            rating = "rating:{}".format(get_image_rating(image["rating"]))
         res = rocketchat.chat_post_message(text=None, channel=CONFIG['rocketchat_channel'], attachments=[
             {
-                "title": "Danbooru #{}".format(image['id']),
+                "title": "Danbooru #{} - {}".format(image['id'], rating),
                 "title_link": source_url,
                 "image_url": image_url,
                 "fields": fields

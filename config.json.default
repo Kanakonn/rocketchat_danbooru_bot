@@ -4,7 +4,6 @@
   "rocketchat_server": "https://your.rocket.chat/",
   "rocketchat_user_id": "",
   "rocketchat_auth_token": "",
-  "rocketchat_rate_limit_ms": 1000,
   "rocketchat_channel": "#general",
   "download_dir": "/tmp/downloads",
   "image_server_url": "http://localhost/{filename}",
